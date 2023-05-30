@@ -4,13 +4,38 @@ import { getAllPokemonData } from "./api/service";
 
 function App() {
   const [pokemonData, setPokemonData] = React.useState(null);
+  const [limit, setLimit] = React.useState(10);
+  const [loading, setLoading] = React.useState(false);
+  const observerTarget = React.useRef(null);
 
   React.useEffect(() => {
     (async () => {
-      const data = await getAllPokemonData();
+      setLoading(true);
+      const data = await getAllPokemonData({ limit });
+      setLoading(false);
       setPokemonData(data.results);
     })();
-  }, []);
+  }, [limit]);
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      async (entries) => {
+        if (entries[0].isIntersecting) {
+          setLimit((prev) => prev + 10);
+        }
+      },
+      { threshold: 1 }
+    );
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current);
+      }
+    };
+  }, [observerTarget]);
+
   return (
     <div className="App">
       <h1>Pokemons</h1>
@@ -37,6 +62,8 @@ function App() {
           );
         })}
       </div>
+      {loading && <h1>Loading...</h1>}
+      <div ref={observerTarget}></div>
     </div>
   );
 }
